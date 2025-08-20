@@ -12,7 +12,7 @@
 
 # testing
 /coverage
-
+pdfs
 # next.js
 /.next/
 /out/
