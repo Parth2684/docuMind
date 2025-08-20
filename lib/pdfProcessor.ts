@@ -69,6 +69,9 @@ export const processFiles = async(selctedFiles: File[]): Promise<ProcessedFile[]
                 type: 'pdf',
                 images: images,
             })
-        }
+        } else {
+            throw new Error(`Unsupported file type: ${fileType}`);
+          }
     }
+    return processFiles
 }
