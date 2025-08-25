@@ -1,3 +1,4 @@
+"use client"
 import { ChangeEvent } from "react"
 import { UploadIcon } from "./ui/Icons"
 

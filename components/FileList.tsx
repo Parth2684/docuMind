@@ -1,3 +1,4 @@
+"use client"
 import { ProcessedFile, FileListItem } from "./FileListItem";
 
 
@@ -10,7 +11,7 @@ interface FileListProps {
 }
 
 export default function FileList ({ files, onRemoveFile, onClearAll, isProcessing } : FileListProps) {
-    if(files.length === 0) return null
+    if(!files || files.length === 0) return null
     return <div className="mb-6">
     <div className="flex justify-between items-center mb-4">
       <h2 className="text-xl font-semibold text-gray-800">Processed Files</h2>

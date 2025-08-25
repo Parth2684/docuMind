@@ -1,3 +1,4 @@
+"use client"
 import { SpinnerIcon } from './Icons';
 
 export function ProcessingAlert() {

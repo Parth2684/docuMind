@@ -1,4 +1,4 @@
-
+"use client"
 
 
 export default function ErrorAlert ({ error }: { error: string }) {

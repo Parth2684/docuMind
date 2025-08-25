@@ -1,3 +1,4 @@
+"use client"
 import { CloseIcon, ImageIcon, PdfIcon } from "./ui/Icons";
 
 
