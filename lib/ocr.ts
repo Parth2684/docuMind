@@ -36,7 +36,6 @@ import {
       const generatedText = processor.batch_decode(generated_ids as Tensor, { skip_special_tokens: false })[0];
       const result = processor.post_process_generation(generatedText, task, image.size);
   
-      console.log(result);
       return result;
     } catch (error) {
       console.error("OCR error:", error);
