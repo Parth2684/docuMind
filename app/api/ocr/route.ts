@@ -20,7 +20,6 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 export const POST = async (req: NextRequest) => {
   try {
     const body = await req.json();
-    // console.log(body);
 
     const parsedBody = apiDataSchema.safeParse(body);
     if (!parsedBody.success) {
@@ -36,8 +35,13 @@ export const POST = async (req: NextRequest) => {
       return imageObject.images
     })
 
-    // console.log(JSON.stringify(imageArray))
-    console.log("length: ", imageArray.length)
+    if(imageArray.length > 25) {
+      return NextResponse.json({
+        message: "Too many number of Images please send less than 25 images"
+      }, {
+        status: 422
+      })
+    }
 
     let chunkArray: string[][] = []
 
@@ -46,16 +50,16 @@ export const POST = async (req: NextRequest) => {
       chunkArray.push(chunk)
     }
 
-    let results: (string | undefined)[] = []
+    let results = Array(chunkArray.length).fill("")
 
-    await Promise.all(
+    await Promise.allSettled(
       chunkArray.map(async (file, i) => {
         const contents = [
           {
             role: "user",
             parts: [
               {
-                text: "Extract the text from the following image(s) and return only OCR'ed text. Remove unnecessary info like paper/college names or page number or image number, auto-correct according to context, and describe diagrams in a way the user can infer them mentally. Do not add comments or any extra data that is not needed."
+                text: `Extract the text from the following image(s) and return only OCR'ed text. Remove unnecessary info and do not include it in your response like paper/college names or page number or image number, auto-correct according to context, and describe diagrams in a way the user can infer them mentally just by reading and do not return the actual diagrams in any form just return like how a person reads it. Do not add comments or any extra data that is not needed. The response you provide will be read by a text to speech model which will read everything so user can just here it instead of reading so give it in that kind of suitable format with suitable punctuations Customize pronunciation with Markdown link syntax and /slashes/ like [Kokoro](/kˈOkəɹO/), To adjust intonation, try punctuation ;:,.!?—…"()“” or stress ˈ andˌLower stress [1 level](-1) or [2 levels](-2), Raise stress 1 level [or](+2) 2 levels (only works on less stressed, usually short words)`
               },
               ...file.map((image) => ({
                 inlineData: { data: image, mimeType: "image/webp" }
@@ -69,7 +73,7 @@ export const POST = async (req: NextRequest) => {
             model: "gemini-2.0-flash-lite" ,
             contents
           })
-          results.push(response.text)
+          results[i] = response.text
         } catch (error) {
           console.error(error)
           throw new Error(`Error from ${i}th file`)
