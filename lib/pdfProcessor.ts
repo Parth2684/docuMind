@@ -1,7 +1,4 @@
 "use client"
-
-import type { PDFDocumentProxy } from 'pdfjs-dist';
-
 // Use dynamic import to load PDF.js only on client-side
 let pdfjsLib: typeof import('pdfjs-dist') | null = null;
 
@@ -28,13 +25,27 @@ export const convertFileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.split(",")[1]);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject("No canvas context");
+
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+
+        // Always encode as webp
+        const webpData = canvas.toDataURL("image/webp", 0.7);
+        resolve(webpData.split(",")[1]);
+      };
+      img.src = reader.result as string;
     };
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
 };
+
 
 export const convertPdfToImage = async (file: File): Promise<string[]> => {
   if (typeof window === 'undefined') {
@@ -59,16 +70,7 @@ export const convertPdfToImage = async (file: File): Promise<string[]> => {
       const viewport = page.getViewport({ scale });
       
       // Get the page's media box and crop box to understand the actual content area
-      const pageDict = page.ref ? await pdf.getPage(pageNum) : page;
-      
-      console.log(`Page ${pageNum} viewport:`, {
-        width: viewport.width,
-        height: viewport.height,
-        offsetX: viewport.offsetX || 0,
-        offsetY: viewport.offsetY || 0,
-        rotation: viewport.rotation
-      });
-    
+     
       // Create canvas with extra padding to ensure nothing gets cut off
       const canvas = document.createElement("canvas");
       const context = canvas.getContext("2d", { alpha: false });
@@ -129,7 +131,7 @@ export const convertPdfToImage = async (file: File): Promise<string[]> => {
       );
     
       // Convert final canvas to base64
-      const imageData = contentCanvas.toDataURL("image/png");
+      const imageData = contentCanvas.toDataURL("image/webp", 0.8);
       const base64Data = imageData.split(",")[1];
       
       console.log(`Page ${pageNum} converted successfully`);
@@ -225,7 +227,7 @@ export const convertPdfToImageTransform = async (file: File): Promise<string[]> 
       
       context.restore();
     
-      const imageData = canvas.toDataURL("image/png");
+      const imageData = canvas.toDataURL("image/webp", 0.8);
       const base64Data = imageData.split(",")[1];
       
       images.push(base64Data);

@@ -1,4 +1,3 @@
-import { ocr } from "@/lib/ocr";
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import z from "zod";
@@ -21,7 +20,8 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 export const POST = async (req: NextRequest) => {
   try {
     const body = await req.json();
-    console.log(body);
+    // console.log(body);
+
     const parsedBody = apiDataSchema.safeParse(body);
     if (!parsedBody.success) {
       return NextResponse.json(
@@ -32,36 +32,62 @@ export const POST = async (req: NextRequest) => {
 
     const { files } = parsedBody.data.apiData;
 
-    let data: string;
-
-    const imagesArray = files.map((file) => ( {
-      images: file.images
-    }))
-
-
-    imagesArray.map(async (imagesArray)=> {
-      const content = imagesArray.images.map((image) => ({
-        image,
-        text: "Extract the text from the followning image and return the output, remove the unnecessary thing like of the paper industry or college name or anything like that auto correct words according to the topic of the context and if there are diagrams return the text in such a way that user can infer the diagram in his mind and do not add any comments from your side only return the text which is being ocr'ed"
-      }))
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-preview-vision",
-        contents: content
-      })
-
-      data = data + response.text
-    }) 
-
-    NextResponse.json({
-      message: "Successful",
-      text: data
+    const imageArray = files.flatMap((imageObject) => {
+      return imageObject.images
     })
 
-        
+    // console.log(JSON.stringify(imageArray))
+    console.log("length: ", imageArray.length)
+
+    let chunkArray: string[][] = []
+
+    for (let i = 0; i < imageArray.length; i+=6) {
+      const chunk = imageArray.slice(i, i+6)
+      chunkArray.push(chunk)
+    }
+
+    let results: (string | undefined)[] = []
+
+    await Promise.all(
+      chunkArray.map(async (file, i) => {
+        const contents = [
+          {
+            role: "user",
+            parts: [
+              {
+                text: "Extract the text from the following image(s) and return only OCR'ed text. Remove unnecessary info like paper/college names or page number or image number, auto-correct according to context, and describe diagrams in a way the user can infer them mentally. Do not add comments or any extra data that is not needed."
+              },
+              ...file.map((image) => ({
+                inlineData: { data: image, mimeType: "image/webp" }
+              }))
+            ]
+          }
+        ]
+
+        try {
+          const response = await ai.models.generateContent({
+            model: "gemini-2.0-flash-lite" ,
+            contents
+          })
+          results.push(response.text)
+        } catch (error) {
+          console.error(error)
+          throw new Error(`Error from ${i}th file`)
+        }
+      })
+    )
+
+    const data = results.join("\n\n")
+
+    return NextResponse.json({
+      message: "Successful",
+      text: data,
+    });
+
   } catch (error) {
     console.error(error);
     return NextResponse.json(
-      { message: "Server Error" },
+      { message: "Server Error", error },
       { status: 500 }
     );
   }
