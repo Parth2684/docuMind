@@ -68,10 +68,10 @@ export default function TextEditor({ text, onChange }: TextEditorProps) {
         <textarea
           value={editedText}
           onChange={(e) => setEditedText(e.target.value)}
-          className="w-full h-96 p-4 border border-gray-300 bg-black rounded-lg resize-y"
+          className="w-full h-96 p-4 border border-gray-300 bg-black text-white rounded-lg resize-y"
         />
       ) : (
-        <div className="bg-black p-4 rounded-lg border border-gray-200 max-h-96 overflow-y-auto">
+        <div className="bg-black p-4 rounded-lg border border-gray-200 text-white max-h-96 overflow-y-auto">
           <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">{text}</pre>
         </div>
       )}

@@ -28,5 +28,8 @@
     "eslint-config-next": "15.4.6",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "optionalDependencies": {
+    "sharp": "^0.34.3"
   }
 }

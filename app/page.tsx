@@ -3,7 +3,7 @@ import FileUploader from '@/components/FileUploader'
 export default function Home() {
   return (
     <main className="mx-auto p-8 max-w-6xl">
-      <header className="text-center">
+      <header className="text-center text-white position-fixed top-0">
         <h1 className="text-3xl font-bold mb-4">
           DocuMind
         </h1>

@@ -60,6 +60,10 @@ importers:
       typescript:
         specifier: ^5
         version: 5.9.2
+    optionalDependencies:
+      sharp:
+        specifier: ^0.34.3
+        version: 0.34.3
 
 packages:
 

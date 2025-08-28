@@ -1,4 +1,4 @@
-import { ProcessedFile } from "@/components/FileListItem"
+import { ProcessedFile } from "@/lib/pdfProcessor"
 import axios, { AxiosResponse } from "axios"
 
 

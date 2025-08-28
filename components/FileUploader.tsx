@@ -128,7 +128,7 @@ export default function FileUploader() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
         </svg>
         
-        <p className="text-lg mb-2">Drop files here or click to browse</p>
+        <p className="text-lg text-gray-500 mb-2">Drop files here or click to browse</p>
         <p className="text-sm text-gray-500">Supports PDF and image files</p>
         
         <button
@@ -147,9 +147,9 @@ export default function FileUploader() {
             {files.map((file, index) => (
               <div key={index} className="flex items-center justify-between bg-black p-3 rounded">
                 <div className="flex items-center space-x-3">
-                  {/* <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8l4 4v10a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                  </svg> */}
+                  </svg>
                   <span className="text-lg"> {file.name}</span>
                   <span className="text-xs text-white">
                     ({(file.size / 1024 / 1024).toFixed(2)} MB)
@@ -171,13 +171,13 @@ export default function FileUploader() {
             <button
               onClick={processAndUpload}
               disabled={isProcessing || isLoadingOCR}
-              className="px-6 py-3 mt-3 bg-blue-600 text-white rounded-lg hover:blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="px-6 py-3 mt-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {isProcessing ? 'Processing Files...' : isLoadingOCR ? 'Extracting Text...' : 'Extract Text'}
             </button>
             <button
               onClick={reset}
-              className="px-6 py-3 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors"
+              className="px-6 py-3 mt-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-all"
             >
               Reset
             </button>
@@ -194,12 +194,13 @@ export default function FileUploader() {
             <button
               onClick={generateAudio}
               disabled={isGeneratingAudio}
-              className="px-8 py-3 bg-black text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed items-center gap-2"
+              className="px-9 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed gap-1"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
               </svg>
-              {isGeneratingAudio ? 'Generating Audio...' : 'Convert to Audio'}
+              <span>{isGeneratingAudio ? 'Generating Audio...' : 'Convert to Audio'}
+              </span>
             </button>
           </div>
         </>
