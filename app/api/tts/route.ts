@@ -1,7 +1,6 @@
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
-import { KokoroTTS } from "kokoro-js";
 import z from "zod";
 
 const bodySchema = z.object({
@@ -22,6 +21,8 @@ export const POST = async(req: NextRequest) => {
         }
         const { text, voice } = parsedBody.data
         const modelId = "onnx-community/Kokoro-82M-ONNX"
+
+        const { KokoroTTS } = await import("kokoro-js");
 
         const tts = await KokoroTTS.from_pretrained(modelId, {
             dtype: "q8"

@@ -28,7 +28,7 @@ export default function TextEditor({ text, onChange }: TextEditorProps) {
   }
 
   return (
-    <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-6">
+    <div className="bg-black rounded-lg p-6">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold">Extracted Text</h3>
         <div className="flex gap-2">
