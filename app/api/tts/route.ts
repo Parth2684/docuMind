@@ -25,11 +25,11 @@ export const POST = async(req: NextRequest) => {
         const { KokoroTTS } = await import("kokoro-js");
 
         const tts = await KokoroTTS.from_pretrained(modelId, {
-            dtype: "q8"
+            dtype: "q8",
         })
-
+        
         const audio = await tts.generate(text, {
-            voice
+            voice,
         })
 
         const wav = audio.toWav()

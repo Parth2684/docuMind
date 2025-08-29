@@ -43,14 +43,14 @@ export const POST = async (req: NextRequest) => {
       })
     }
 
-    let chunkArray: string[][] = []
+    const chunkArray: string[][] = []
 
     for (let i = 0; i < imageArray.length; i+=6) {
       const chunk = imageArray.slice(i, i+6)
       chunkArray.push(chunk)
     }
 
-    let results = Array(chunkArray.length).fill("")
+    const results = Array(chunkArray.length).fill("")
 
     await Promise.allSettled(
       chunkArray.map(async (file, i) => {

@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 import { processFiles, ProcessedFile } from '@/lib/pdfProcessor'
 import TextEditor from '@/components/TextEditor'
 import AudioPlayer from '@/components/AudioPlayer'
+import path from 'path'
 
 export default function FileUploader() {
   const [files, setFiles] = useState<File[]>([])
@@ -14,6 +15,7 @@ export default function FileUploader() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [voice, setVoice] = useState("")
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || [])
@@ -64,8 +66,8 @@ export default function FileUploader() {
     }
   }
 
-  const generateAudio = async () => {
-    if (!ocrText) return
+  const generateAudio = async (voice: string) => {
+    if (!ocrText || !voice) return
 
     setIsGeneratingAudio(true)
     try {
@@ -74,7 +76,8 @@ export default function FileUploader() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: ocrText,
-          voice: 'af_sky'
+          voiceDir: path.join,
+          voice
         })
       })
 
@@ -191,8 +194,12 @@ export default function FileUploader() {
           <TextEditor text={ocrText} onChange={setOcrText} />
           
           <div className="flex justify-center">
+            <select defaultValue="af_sky" value={voice} onChange={(e) => setVoice(e.target.value)}>
+              <option value="af_sky">Female</option>
+              <option value="am_michael">Male</option>
+            </select>
             <button
-              onClick={generateAudio}
+              onClick={() => generateAudio(voice)}
               disabled={isGeneratingAudio}
               className="px-9 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed gap-1"
             >
