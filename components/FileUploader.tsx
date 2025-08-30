@@ -93,7 +93,7 @@ export default function FileUploader() {
       setStatusMessage("Loading TTS model...")
       const tts = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-ONNX", {
         dtype: "q8",
-        device: "wasm"
+        device: "webgpu"
       })
 
       setStatusMessage("Splitting text into sentences...")
