@@ -64,7 +64,7 @@ export default function AudioPlayer({ audioUrl }: AudioPlayerProps) {
   }
 
   return (
-    <div className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900 rounded-lg p-6">
+    <div className="bg-gray-700 text-white rounded-lg p-6">
       <h3 className="text-lg font-semibold mb-4">Audio Player</h3>
       
       <audio ref={audioRef} src={audioUrl} />
@@ -73,7 +73,7 @@ export default function AudioPlayer({ audioUrl }: AudioPlayerProps) {
         <div className="flex items-center gap-4">
           <button
             onClick={togglePlay}
-            className="w-12 h-12 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
+            className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:bg-blue-700 text-white transition-shadow"
           >
             {isPlaying ? (
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">

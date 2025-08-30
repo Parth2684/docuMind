@@ -3,16 +3,16 @@ import FileUploader from '@/components/FileUploader'
 export default function Home() {
   return (
     <main className="mx-auto p-8 max-w-6xl">
-      <header className="text-center text-white position-fixed top-0">
-        <h1 className="text-3xl font-bold mb-4">
-          DocuMind
-        </h1>
-        <p className="text-xl text-gray-300">
+      {/* Topbar */}
+      <header className="fixed top-0 left-0 w-full bg-black shadow-md z-50 text-center py-4">
+        <h1 className="text-3xl font-bold text-white">DocuMind</h1>
+        <p className="text-lg text-gray-300">
           Transform your documents into text and audio with AI-powered OCR
         </p>
       </header>
 
-      <div className="bg-black rounded-2xl shadow-xl p-8">
+      {/* Push content down so it doesn’t hide behind header */}
+      <div className="pt-32 bg-black rounded-2xl shadow-xl p-8">
         <FileUploader />
       </div>
 

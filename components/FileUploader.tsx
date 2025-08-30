@@ -1,21 +1,19 @@
 "use client"
 
 import { useState, useRef, useCallback } from 'react'
-import { processFiles, ProcessedFile } from '@/lib/pdfProcessor'
+import { processFiles } from '@/lib/pdfProcessor'
 import TextEditor from '@/components/TextEditor'
 import AudioPlayer from '@/components/AudioPlayer'
-import path from 'path'
 
 export default function FileUploader() {
   const [files, setFiles] = useState<File[]>([])
-  const [processedFiles, setProcessedFiles] = useState<ProcessedFile[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [ocrText, setOcrText] = useState('')
   const [isLoadingOCR, setIsLoadingOCR] = useState(false)
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [voice, setVoice] = useState("")
+  const [voice, setVoice] = useState("af_sky")
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || [])
@@ -34,7 +32,6 @@ export default function FileUploader() {
     setIsProcessing(true)
     try {
       const processed = await processFiles(files)
-      setProcessedFiles(processed)
       
       // Send to OCR API
       setIsLoadingOCR(true)
@@ -76,13 +73,13 @@ export default function FileUploader() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: ocrText,
-          voiceDir: path.join,
           voice
         })
       })
 
       if (response.ok) {
-        const blob = await response.blob()
+        const arrayBuffer = await response.arrayBuffer()
+        const blob = new Blob([arrayBuffer], { type: "audio/wav" })
         const url = URL.createObjectURL(blob)
         setAudioUrl(url)
       } else {
@@ -102,7 +99,6 @@ export default function FileUploader() {
 
   const reset = () => {
     setFiles([])
-    setProcessedFiles([])
     setOcrText('')
     setAudioUrl(null)
     if (fileInputRef.current) {
@@ -193,10 +189,10 @@ export default function FileUploader() {
         <>
           <TextEditor text={ocrText} onChange={setOcrText} />
           
-          <div className="flex justify-center">
-            <select defaultValue="af_sky" value={voice} onChange={(e) => setVoice(e.target.value)}>
-              <option value="af_sky">Female</option>
-              <option value="am_michael">Male</option>
+          <div className="flex justify-center gap-4">
+            <select className="text-white bg-blue-600 hover:bg-blue-700 p-3 m-2 rounded-lg" value={voice} onChange={(e) => setVoice(e.target.value)}>
+              <option className="text-white bg-blue-600 hover:bg-blue-700 p-3 m-2 rounded-lg" value="af_sky">Female</option>
+              <option className="text-white bg-blue-600 hover:bg-blue-700 p-3 m-2 rounded-lg" value="am_michael">Male</option>
             </select>
             <button
               onClick={() => generateAudio(voice)}

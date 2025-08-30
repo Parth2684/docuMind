@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postbuild": "npx cpx \"voices/*.bin\" .next/server/voices"
   },
   "dependencies": {
     "@google/genai": "^1.15.0",

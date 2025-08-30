@@ -95,11 +95,11 @@ export const convertPdfToImage = async (file: File): Promise<string[]> => {
       const renderViewport = page.getViewport({ scale });
       
       try {
-        // @ts-ignore
         const renderTask = page.render({
           canvasContext: context,
           viewport: renderViewport,
-          background: 'white'
+          background: 'white',
+          canvas
         });
         
         await renderTask.promise;
@@ -203,11 +203,11 @@ export const convertPdfToImageTransform = async (file: File): Promise<string[]> 
       }
       
       try {
-        // @ts-ignore
         const renderTask = page.render({
           canvasContext: context,
           viewport: page.getViewport({ scale: 1 }), // Use scale 1 since we handle scaling in transform
-          transform: [scale, 0, 0, scale, 0, 0] // Apply scaling through transform
+          transform: [scale, 0, 0, scale, 0, 0], // Apply scaling through transform
+          canvas
         });
         
         await renderTask.promise;
@@ -218,10 +218,10 @@ export const convertPdfToImageTransform = async (file: File): Promise<string[]> 
         context.restore();
         context.fillStyle = '#FFFFFF';
         context.fillRect(0, 0, canvas.width, canvas.height);
-        // @ts-ignore
         await page.render({
           canvasContext: context,
-          viewport: viewport
+          viewport: viewport,
+          canvas
         }).promise;
       }
       
