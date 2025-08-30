@@ -59,7 +59,25 @@ export const POST = async (req: NextRequest) => {
             role: "user",
             parts: [
               {
-                text: `Extract the text from the following image(s) and return only OCR'ed text. Remove unnecessary info and do not include it in your response like paper/college names or page number or image number, auto-correct according to context, and describe diagrams in a way the user can infer them mentally just by reading and do not return the actual diagrams in any form just return like how a person reads it. Do not add comments or any extra data that is not needed. The response you provide will be read by a text to speech model which will read everything so user can just here it instead of reading so give it in that kind of suitable format with suitable punctuations Customize pronunciation with Markdown link syntax and /slashes/ like [Kokoro](/kˈOkəɹO/), To adjust intonation, try punctuation ;:,.!?—…"()“” or stress ˈ andˌLower stress [1 level](-1) or [2 levels](-2), Raise stress 1 level [or](+2) 2 levels (only works on less stressed, usually short words)`
+                text: `Task: Perform Optical Character Recognition (OCR) on the image(s) provided.
+                Instructions for Output:
+                1.  Content:
+                    * Return ONLY the OCR'd text from the image(s).
+                    * Remove all extraneous information, including, but not limited to:
+                        * College or university names.
+                        * Paper titles or names.
+                        * Page numbers or image numbers.
+                    * Crucially, do not include any diagrams or images in the output. Instead, describe them clearly and concisely so that a user listening to the text-to-speech output can easily infer what the diagram represents mentally.
+                    * Auto-correct any spelling or grammatical errors based on the context of the surrounding text.
+                2.  Formatting:
+                    * The final output should be a single block of text, structured as if it were being read by a person.
+                    * Do not add any comments, notes, or extra data that is not part of the original image's content.
+                    * Use punctuation (: ; , . ! ? — ... ( ) “ ”) to control the intonation and pauses for the text-to-speech model, making the speech sound more natural.
+                    * Use stress marks (ˈ, ˌ) to indicate stressed syllables for improved pronunciation.
+                    * For words with a non-standard or specific pronunciation, use Markdown link syntax with slash notation (e.g., [Kokoro](/kˈOkəɹO/)) to explicitly define how they should be pronounced.
+                    * Adjust the stress level of specific words using the [+1] or [+2] notation to raise stress, and [-1] or [-2] to lower stress.
+                    * Do not include any * for showing bold texts
+                Final Goal: The final text should be a clean, accurate, and ready-to-use transcript that can be fed directly into a text-to-speech model, providing a seamless and high-quality listening experience for the user.`
               },
               ...file.map((image) => ({
                 inlineData: { data: image, mimeType: "image/webp" }
