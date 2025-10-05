@@ -114,7 +114,7 @@ export default function FileUploader() {
       })
 
       setStatusMessage("✂️ Splitting text into sentences...")
-      const sentences = ocrText.match(/[^.!?]+[.!?]+/g) || [ocrText]
+      const sentences = ocrText.match(/[^.!?]+(?:[.!?]+|$)/g) || [ocrText]
       console.log(`Total sentences to process: ${sentences.length}`)
 
       const wavArray: ArrayBuffer[] = []
@@ -124,6 +124,7 @@ export default function FileUploader() {
         const audio = await tts.generate(sentences[i], { voice: selectedVoice })
         const wav = audio.toWav()
         wavArray.push(wav)
+        setCurrentChunk(currentChunk + 1)
         console.log(`Completed sentence ${i + 1}, wavArray length: ${wavArray.length}`)
       }
       console.log(`Total wav files generated: ${wavArray.length}`)
@@ -254,7 +255,7 @@ export default function FileUploader() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                Extract Text with OCR
+                Extract Text
               </>
             )}
           </button>
