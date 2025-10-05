@@ -8,55 +8,91 @@ interface TextEditorProps {
 }
 
 export default function TextEditor({ text, onChange }: TextEditorProps) {
-  const [isEditing, setIsEditing] = useState(false)
-  const [editedText, setEditedText] = useState(text)
+  const [isEditing, setIsEditing] = useState<boolean>(false)
+  const [editedText, setEditedText] = useState<string>(text)
+  const [copySuccess, setCopySuccess] = useState<boolean>(false)
 
-  const handleSave = () => {
+  const handleSave = (): void => {
     onChange(editedText)
     setIsEditing(false)
   }
 
-  const handleCancel = () => {
+  const handleCancel = (): void => {
     setEditedText(text)
     setIsEditing(false)
   }
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(text)
-      .then(() => alert('Text copied to clipboard!'))
-      .catch(err => console.error('Failed to copy:', err))
+  const copyToClipboard = async (): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopySuccess(true)
+      setTimeout(() => setCopySuccess(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+    }
   }
 
+  const wordCount = text.split(/\s+/).filter(word => word.length > 0).length
+  const charCount = text.length
+
   return (
-    <div className="bg-black rounded-lg p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">Extracted Text</h3>
+    <div className="bg-[rgb(var(--card))] border border-[rgb(var(--border))] rounded-xl p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div>
+          <h3 className="text-lg font-semibold text-[rgb(var(--foreground))]">Extracted Text</h3>
+          <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">
+            {wordCount} words · {charCount} characters
+          </p>
+        </div>
         <div className="flex gap-2">
           <button
             onClick={copyToClipboard}
-            className="px-4 py-2 text-sm bg-black text-white rounded"
+            className="px-4 py-2 text-sm bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg hover:bg-[rgb(var(--accent))] transition-colors flex items-center gap-2"
           >
-            Copy
+            {copySuccess ? (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Copied!
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Copy
+              </>
+            )}
           </button>
           {!isEditing ? (
             <button
               onClick={() => setIsEditing(true)}
-              className="px-4 py-2 text-sm bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded hover:bg-yellow-200 dark:hover:bg-yellow-800 transition-colors"
+              className="px-4 py-2 text-sm bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg hover:bg-[rgb(var(--accent))] transition-colors flex items-center gap-2"
             >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
               Edit
             </button>
           ) : (
             <>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 text-sm bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded hover:bg-green-200 dark:hover:bg-green-800 transition-colors"
+                className="px-4 py-2 text-sm bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg hover:bg-[rgb(var(--accent))] transition-colors flex items-center gap-2"
               >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
                 Save
               </button>
               <button
                 onClick={handleCancel}
-                className="px-4 py-2 text-sm bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
+                className="px-4 py-2 text-sm bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] rounded-lg hover:bg-[rgb(var(--accent))] transition-colors flex items-center gap-2"
               >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
                 Cancel
               </button>
             </>
@@ -68,11 +104,12 @@ export default function TextEditor({ text, onChange }: TextEditorProps) {
         <textarea
           value={editedText}
           onChange={(e) => setEditedText(e.target.value)}
-          className="w-full h-96 p-4 border border-gray-300 bg-black text-white rounded-lg resize-y"
+          className="w-full h-96 p-4 border border-[rgb(var(--border))] bg-[rgb(var(--background))] text-[rgb(var(--foreground))] rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))] scrollbar-thin"
+          placeholder="Enter your text here..."
         />
       ) : (
-        <div className="bg-black p-4 rounded-lg border border-gray-200 text-white max-h-96 overflow-y-auto">
-          <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">{text}</pre>
+        <div className="bg-[rgb(var(--secondary))] p-4 rounded-lg border border-[rgb(var(--border))] max-h-96 overflow-y-auto scrollbar-thin">
+          <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-[rgb(var(--foreground))]">{text}</pre>
         </div>
       )}
     </div>
