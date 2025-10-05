@@ -77,7 +77,7 @@ export default function GuidePage() {
             </h3>
             <div className="space-y-4">
               <div className="flex gap-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-[rgb(var(--primary))] bg-opacity-10 rounded-full flex items-center justify-center text-[rgb(var(--primary))] font-semibold">
+                <div className="flex-shrink-0 w-8 h-8 bg-[rgb(var(--primary))] bg-opacity-10 rounded-full flex items-center justify-center text-white font-semibold">
                   1
                 </div>
                 <div>
@@ -89,7 +89,7 @@ export default function GuidePage() {
               </div>
               
               <div className="flex gap-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-[rgb(var(--primary))] bg-opacity-10 rounded-full flex items-center justify-center text-[rgb(var(--primary))] font-semibold">
+                <div className="flex-shrink-0 w-8 h-8 bg-[rgb(var(--primary))] bg-opacity-10 rounded-full flex items-center justify-center text-white font-semibold">
                   2
                 </div>
                 <div>
@@ -103,7 +103,7 @@ export default function GuidePage() {
               </div>
               
               <div className="flex gap-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-[rgb(var(--primary))] bg-opacity-10 rounded-full flex items-center justify-center text-[rgb(var(--primary))] font-semibold">
+                <div className="flex-shrink-0 w-8 h-8 bg-[rgb(var(--primary))] bg-opacity-10 rounded-full flex items-center justify-center text-white font-semibold">
                   3
                 </div>
                 <div>
@@ -116,7 +116,7 @@ export default function GuidePage() {
               </div>
               
               <div className="flex gap-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-[rgb(var(--primary))] bg-opacity-10 rounded-full flex items-center justify-center text-[rgb(var(--primary))] font-semibold">
+                <div className="flex-shrink-0 w-8 h-8 bg-[rgb(var(--primary))] bg-opacity-10 rounded-full flex items-center justify-center text-white font-semibold">
                   4
                 </div>
                 <div>
@@ -129,7 +129,7 @@ export default function GuidePage() {
               </div>
               
               <div className="flex gap-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-[rgb(var(--primary))] bg-opacity-10 rounded-full flex items-center justify-center text-[rgb(var(--primary))] font-semibold">
+                <div className="flex-shrink-0 w-8 h-8 bg-[rgb(var(--primary))] bg-opacity-10 rounded-full flex items-center justify-center text-white font-semibold">
                   5
                 </div>
                 <div>
