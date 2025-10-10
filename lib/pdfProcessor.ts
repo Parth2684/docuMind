@@ -266,6 +266,7 @@ export const processFiles = async (
         // Try padding method first (most reliable for cropping issues)
         let images: string[];
         try {
+        
           images = await convertPdfToImage(file);
         } catch (error) {
           console.warn('Padding method failed, trying transform method:', error);
