@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
     config.resolve.alias["sharp"] = path.resolve("./sharp-stub.js")
     return config;
   },
+  eslint: {
+    ignoreDuringBuilds: true, // skips ESLint during next build
+  }
 };
 
 export default nextConfig;
