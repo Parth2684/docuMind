@@ -60,24 +60,42 @@ export const POST = async (req: NextRequest) => {
             parts: [
               {
                 text: `Task: Perform Optical Character Recognition (OCR) on the image(s) provided.
-                Instructions for Output:
-                1.  Content:
-                    * Return ONLY the OCR'd text from the image(s).
-                    * Remove all extraneous information, including, but not limited to:
-                        * College or university names.
-                        * Paper titles or names.
-                        * Page numbers or image numbers.
-                    * Crucially, do not include any diagrams or images in the output. Instead, describe them clearly and concisely so that a user listening to the text-to-speech output can easily infer what the diagram represents mentally.
-                    * Auto-correct any spelling or grammatical errors based on the context of the surrounding text.
-                2.  Formatting:
-                    * The final output should be a single block of text, structured as if it were being read by a person.
-                    * Do not add any comments, notes, or extra data that is not part of the original image's content.
-                    * Use punctuation (: ; , . ! ? — ... ( ) “ ”) to control the intonation and pauses for the text-to-speech model, making the speech sound more natural.
-                    * Use stress marks (ˈ, ˌ) to indicate stressed syllables for improved pronunciation.
-                    * For words with a non-standard or specific pronunciation, use Markdown link syntax with slash notation (e.g., [Kokoro](/kˈOkəɹO/)) to explicitly define how they should be pronounced.
-                    * Adjust the stress level of specific words using the [+1] or [+2] notation to raise stress, and [-1] or [-2] to lower stress.
-                    * Do not include any * for showing bold texts
-                Final Goal: The final text should be a clean, accurate, and ready-to-use transcript that can be fed directly into a text-to-speech model, providing a seamless and high-quality listening experience for the user.`
+
+                      Instructions for Output:
+
+                      1. Content:
+                        a. Return ONLY the OCR'd text from the image(s).
+                        b. Remove all extraneous information, including but not limited to:
+                            - College or university names.
+                            - Paper titles or document names.
+                            - Page numbers or image numbers.
+                        c. Do not include any diagrams or images in the output. Instead, describe them clearly and concisely so that a listener using text-to-speech can mentally visualize what the diagram represents.
+                        d. If a table, chart, or difference table is present, convert it into a descriptive, speech-friendly format. Clearly explain what the table represents, summarizing rows, columns, and key comparisons in a way that allows the listener to understand its structure and meaning without seeing it. Avoid reading it as plain OCR text.
+                        e. Auto-correct any spelling or grammatical errors based on contextual meaning.
+                        f. Convert non-verbal text or symbols into spoken equivalents. For example:
+                            - ".net" → "dotnet"
+                            - "C#" → "C sharp"
+                            - "C++" → "C plus plus"
+                            - "&" → "and"
+                            - "%" → "percent"
+                            - "@" → "at"
+                            - "/" → "slash"
+                            - "-" → "dash" (only if it represents a connector, not a minus sign)
+                            - "_" → "underscore"
+                        g. Expand abbreviations or acronyms when their meaning is clear from context to improve speech clarity.
+
+                      2. Formatting:
+                        a. The final output must be a single continuous block of text, structured as natural spoken language.
+                        b. Do not include comments, notes, or extra data unrelated to the original image content.
+                        c. Use punctuation marks (: ; , . ! ? — ... ( ) “ ”) to control intonation and pauses for natural speech.
+                        d. Use stress marks (ˈ, ˌ) to indicate stressed syllables for better pronunciation accuracy.
+                        e. For words with non-standard pronunciation, use Markdown link syntax with slash notation (for example, [Kokoro](/kˈOkəɹO/)).
+                        f. Adjust stress levels of words using [+1] or [+2] for emphasis and [-1] or [-2] for de-emphasis.
+                        g. Do not use any asterisks (*) for list formatting or text bolding.
+                        h. If the ocr is of question answer keep question number at the start so the user would know which question number is going on, add a fullstop or question mark at the end of the question and also add "Answer:" before the answer starts so user knows that question is over 
+
+                      Final Goal:
+                      Produce a clean, accurate, and natural-sounding transcript that can be fed directly into a text-to-speech model, ensuring the listener experiences clear, expressive, and contextually correct audio output.`
               },
               ...file.map((image) => ({
                 inlineData: { data: image, mimeType: "image/webp" }
