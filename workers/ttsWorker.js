@@ -1,29 +1,35 @@
-import { parentPort, workerData } from "node:worker_threads";
-import { KokoroTTS } from "kokoro-js";
+// workers/ttsWorker.js
 
-async function run() {
-  const { sentences, voice } = workerData;
-  try {
-    const tts = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-ONNX", {
+
+
+let tts = null;
+
+// Initialize TTS once per worker
+async function initTTS() {
+  const { KokoroTTS } = await import("kokoro-js");
+  if (!tts) {
+    tts = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-ONNX", {
       dtype: "q8",
       device: "cpu",
     });
-
-    const buffers = [];
-    for (const sentence of sentences) {
-      const audio = await tts.generate(sentence, { voice });
-      const wav = audio?.toWav();
-      if (wav) {
-        buffers.push(Buffer.from(wav));
-      } else {
-        console.warn("Skipped a sentence, TTS returned undefined:", sentence);
-      }
-    }    
-
-    parentPort?.postMessage(buffers);
-  } catch (err) {
-    parentPort?.postMessage({ error: err.message });
   }
+  return tts;
 }
 
-run();
+process.on("message", async (msg) => {
+  try {
+    const { chunk, voice } = msg;
+    const ttsEngine = await initTTS();
+    
+    const audio = await ttsEngine.generate(chunk, { voice });
+    const wav = audio?.toWav();
+    
+    if (wav) {
+      process.send({ result: Buffer.from(wav) });
+    } else {
+      process.send({ error: "TTS returned undefined" });
+    }
+  } catch (err) {
+    process.send({ error: err.message });
+  }
+});

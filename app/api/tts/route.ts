@@ -3,9 +3,9 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
-import { Worker } from "node:worker_threads";
+import { fork, ChildProcess } from "child_process";
 import os from "os";
-import path from "node:path";
+import path from "path";
 
 const bodySchema = z.object({
   text: z.string(),
@@ -31,7 +31,7 @@ function concatWavs(wavArray: Buffer[]): Buffer {
   return output;
 }
 
-// Split text into ~300 char chunks
+// Split text into ~50 char chunks
 function splitText(text: string): string[] {
   const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
   const chunks: string[] = [];
@@ -49,25 +49,48 @@ function splitText(text: string): string[] {
   return chunks;
 }
 
-// Worker runner
-function runWorker(sentences: string[], voice: string): Promise<Buffer[]> {
+// Process a chunk in a child process
+function processChunk(chunk: string, voice: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const workerFile = path.resolve(process.cwd(), "workers/ttsWorker.js");
-    const worker = new Worker(workerFile, { workerData: { sentences, voice } });
-
-    worker.on("message", (data: any) => {
-      if (data.error) return reject(new Error(data.error));
-      // Convert ArrayBuffers back to Node Buffers and filter out undefined
-      const buffers: Buffer[] = data
-        .filter((b: any) => b) 
-        .map((b: ArrayBuffer) => Buffer.from(b));
-      resolve(buffers);
+    const workerPath = path.resolve(process.cwd(), "workers/ttsWorker.js");
+    const child: ChildProcess = fork(workerPath, [], {
+      stdio: ["pipe", "pipe", "pipe", "ipc"],
     });
 
-    worker.on("error", reject);
-    worker.on("exit", (code) => {
-      if (code !== 0) reject(new Error(`Worker stopped with exit code ${code}`));
+    let resolved = false;
+
+    child.on("message", (msg: any) => {
+      if (resolved) return;
+      
+      if (msg.error) {
+        resolved = true;
+        child.kill();
+        return reject(new Error(msg.error));
+      }
+      if (msg.result) {
+        resolved = true;
+        child.kill();
+        resolve(Buffer.from(msg.result));
+      }
     });
+
+    child.on("exit", (code) => {
+      if (!resolved && code !== 0) {
+        resolved = true;
+        reject(new Error(`Child process exited with code ${code}`));
+      }
+    });
+
+    child.on("error", (err) => {
+      if (!resolved) {
+        resolved = true;
+        child.kill();
+        reject(err);
+      }
+    });
+
+    // Send the task to child process
+    child.send({ chunk, voice });
   });
 }
 
@@ -84,24 +107,20 @@ export const POST = async (req: NextRequest) => {
     const { text, voice } = parsedBody.data;
     const textChunks = splitText(text);
 
-    // Split chunks evenly among workers
-    const chunkedForWorkers: string[][] = [];
-    const chunkSize = Math.ceil(textChunks.length / MAX_WORKERS);
-    for (let i = 0; i < textChunks.length; i += chunkSize) {
-      chunkedForWorkers.push(textChunks.slice(i, i + chunkSize));
-    }
-
-    // Progressive merging
-    const finalBuffers: Buffer[] = [];
-    for (const workerChunk of chunkedForWorkers) {
-      const results = await runWorker(workerChunk, voice);
-      finalBuffers.push(...results.filter(b => b)); // <-- filter undefined
+    // Process chunks with limited concurrency
+    const results: Buffer[] = [];
+    for (let i = 0; i < textChunks.length; i += MAX_WORKERS) {
+      const batch = textChunks.slice(i, i + MAX_WORKERS);
+      const batchResults = await Promise.all(
+        batch.map((chunk) => processChunk(chunk, voice))
+      );
+      results.push(...batchResults.filter(Boolean));
     }
 
     // Make sure we have at least one valid buffer
-    if (!finalBuffers.length) throw new Error("No audio generated");
+    if (!results.length) throw new Error("No audio generated");
 
-    const finalWav = concatWavs(finalBuffers);
+    const finalWav = concatWavs(results);
 
     return new NextResponse(new Uint8Array(finalWav), {
       headers: {

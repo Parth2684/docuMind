@@ -1,7 +1,0 @@
-onlyBuiltDependencies:
-  - '@tailwindcss/oxide'
-  - canvas
-  - onnxruntime-node
-  - protobufjs
-  - sharp
-  - unrs-resolver
