@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import path from "path";
+import os from "os"
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -9,6 +10,8 @@ const nextConfig: NextConfig = {
       config.externals.push("onnxruntime-node", "sharp");
     }
 
+    const threads = os.cpus().length
+    config.parallelism = threads
     config.resolve.alias["sharp"] = path.resolve("./sharp-stub.js")
     return config;
   },

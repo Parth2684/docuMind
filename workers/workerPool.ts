@@ -2,8 +2,11 @@ import { fork, ChildProcess } from 'child_process';
 import os from 'os'
 import path from "path"
 
+const CPU_COUNT = os.cpus().length
 
-export const MAX_WORKERS = Math.max(2, Math.min(8, process.env.NODE_ENV == "production" ? os.cpus().length/2 : os.cpus().length));
+export const MAX_WORKERS = String(process.env.MY_ENV) === "production"
+  ? Math.max(2, Math.floor(CPU_COUNT / 2))   // half cores in prod
+  : Math.max(4, CPU_COUNT); 
 const workers: { proc: ChildProcess; busy: boolean }[] = [];
 
 export function initWorkerPool() {
@@ -14,7 +17,6 @@ export function initWorkerPool() {
     const child = fork(workerPath, [], { stdio: ["pipe", "pipe", "pipe", "ipc"] });
     workers.push({proc: child, busy: false})
   }
-  console.log(`initialized ${MAX_WORKERS} tts workers`)
 }
 
 export async function runTTS(text: string, voice: string): Promise<Buffer> {
