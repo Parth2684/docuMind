@@ -6,7 +6,6 @@ import z from "zod";
 import { fork, ChildProcess } from "child_process";
 import os from "os";
 import path from "path";
-
 const bodySchema = z.object({
   text: z.string(),
   voice: z.enum(["af_sky", "am_michael"]),
@@ -38,7 +37,7 @@ function splitText(text: string): string[] {
   let buffer = "";
 
   for (const s of sentences) {
-    if ((buffer + s).length > 50) {
+    if ((buffer + s).length > 150) {
       chunks.push(buffer);
       buffer = s;
     } else {
@@ -61,7 +60,7 @@ function processChunk(chunk: string, voice: string): Promise<Buffer> {
 
     child.on("message", (msg: any) => {
       if (resolved) return;
-      
+
       if (msg.error) {
         resolved = true;
         child.kill();
@@ -112,7 +111,7 @@ export const POST = async (req: NextRequest) => {
     for (let i = 0; i < textChunks.length; i += MAX_WORKERS) {
       const batch = textChunks.slice(i, i + MAX_WORKERS);
       const batchResults = await Promise.all(
-        batch.map((chunk) => processChunk(chunk, voice))
+        batch.map((chunk) => processChunk(chunk, voice)),
       );
       results.push(...batchResults.filter(Boolean));
     }

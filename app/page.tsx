@@ -1,4 +1,4 @@
-import FileUploader from '@/components/FileUploader'
+import FileUploader from "@/components/FileUploader";
 
 export default function Home() {
   return (
@@ -13,6 +13,7 @@ export default function Home() {
 
       {/* Push content down so it doesn’t hide behind header */}
       <div className="pt-32 bg-black rounded-2xl shadow-xl p-8">
+        {" "}
         <FileUploader />
       </div>
 
@@ -20,5 +21,5 @@ export default function Home() {
         <p>© 2025 DocuMind. Powered by Gemini AI & Kokoro TTS</p>
       </footer>
     </main>
-  )
+  );
 }
