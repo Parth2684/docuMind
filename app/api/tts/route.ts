@@ -3,13 +3,16 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
-import { fork, ChildProcess } from "child_process";
-import os from "os";
-import path from "path";
+// import { fork, ChildProcess } from "child_process";
+// import os from "os";
+// import path from "path";
+import { initWorkerPool, MAX_WORKERS, runTTS } from '../../../workers/workerPool';
 const bodySchema = z.object({
   text: z.string(),
   voice: z.enum(["af_sky", "am_michael"]),
 });
+
+initWorkerPool()
 
 // Concatenate WAV buffers incrementally
 function concatWavs(wavArray: Buffer[]): Buffer {
@@ -49,52 +52,52 @@ function splitText(text: string): string[] {
 }
 
 // Process a chunk in a child process
-function processChunk(chunk: string, voice: string): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    const workerPath = path.resolve(process.cwd(), "workers/ttsWorker.js");
-    const child: ChildProcess = fork(workerPath, [], {
-      stdio: ["pipe", "pipe", "pipe", "ipc"],
-    });
+// function processChunk(chunk: string, voice: string): Promise<Buffer> {
+//   return new Promise((resolve, reject) => {
+//     const workerPath = path.resolve(process.cwd(), "workers/ttsWorker.js");
+//     const child: ChildProcess = fork(workerPath, [], {
+//       stdio: ["pipe", "pipe", "pipe", "ipc"],
+//     });
 
-    let resolved = false;
+//     let resolved = false;
 
-    child.on("message", (msg: any) => {
-      if (resolved) return;
+//     child.on("message", (msg: any) => {
+//       if (resolved) return;
 
-      if (msg.error) {
-        resolved = true;
-        child.kill();
-        return reject(new Error(msg.error));
-      }
-      if (msg.result) {
-        resolved = true;
-        child.kill();
-        resolve(Buffer.from(msg.result));
-      }
-    });
+//       if (msg.error) {
+//         resolved = true;
+//         child.kill();
+//         return reject(new Error(msg.error));
+//       }
+//       if (msg.result) {
+//         resolved = true;
+//         child.kill();
+//         resolve(Buffer.from(msg.result));
+//       }
+//     });
 
-    child.on("exit", (code) => {
-      if (!resolved && code !== 0) {
-        resolved = true;
-        reject(new Error(`Child process exited with code ${code}`));
-      }
-    });
+//     child.on("exit", (code) => {
+//       if (!resolved && code !== 0) {
+//         resolved = true;
+//         reject(new Error(`Child process exited with code ${code}`));
+//       }
+//     });
 
-    child.on("error", (err) => {
-      if (!resolved) {
-        resolved = true;
-        child.kill();
-        reject(err);
-      }
-    });
+//     child.on("error", (err) => {
+//       if (!resolved) {
+//         resolved = true;
+//         child.kill();
+//         reject(err);
+//       }
+//     });
 
-    // Send the task to child process
-    child.send({ chunk, voice });
-  });
-}
+//     // Send the task to child process
+//     child.send({ chunk, voice });
+//   });
+// }
 
-// Max workers = CPU cores or 8
-const MAX_WORKERS = Math.max(2, Math.min(8, os.cpus().length));
+// // Max workers = CPU cores or 8
+// const MAX_WORKERS = Math.max(2, Math.min(8, os.cpus().length));
 
 export const POST = async (req: NextRequest) => {
   try {
@@ -111,11 +114,18 @@ export const POST = async (req: NextRequest) => {
     for (let i = 0; i < textChunks.length; i += MAX_WORKERS) {
       const batch = textChunks.slice(i, i + MAX_WORKERS);
       const batchResults = await Promise.all(
-        batch.map((chunk) => processChunk(chunk, voice)),
+        batch.map((chunk) => runTTS(chunk, voice)),
       );
       results.push(...batchResults.filter(Boolean));
     }
+    
+    // for (const chunk of textChunks) {
+    //   const result = await runTTS(chunk, voice)
+    //   results.push(result)
+    // }
+    
 
+    
     // Make sure we have at least one valid buffer
     if (!results.length) throw new Error("No audio generated");
 
