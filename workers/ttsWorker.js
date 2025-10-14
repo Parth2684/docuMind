@@ -1,12 +1,9 @@
 // workers/ttsWorker.js
-
-
-
-let tts = null;
+import { KokoroTTS } from "kokoro-js";
+let tts;
 
 // Initialize TTS once per worker
 async function initTTS() {
-  const { KokoroTTS } = await import("kokoro-js");
   if (!tts) {
     tts = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-ONNX", {
       dtype: "q8",
