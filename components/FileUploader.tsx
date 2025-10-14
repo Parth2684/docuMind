@@ -5,36 +5,52 @@ import { processFiles } from '@/lib/pdfProcessor'
 import TextEditor from '@/components/TextEditor'
 import AudioPlayer from '@/components/AudioPlayer'
 
+type VoiceType = "af_sky" | "am_michael"
+
 export default function FileUploader() {
   const [files, setFiles] = useState<File[]>([])
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [ocrText, setOcrText] = useState('')
-  const [isLoadingOCR, setIsLoadingOCR] = useState(false)
+  const [ocrText, setOcrText] = useState<string>('')
+  const [voice, setVoice] = useState<VoiceType>("af_sky")
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
+  const [statusMessage, setStatusMessage] = useState<string | null>(null)
+  const [isBusy, setIsBusy] = useState<boolean>(false)
+  const [totalChunks, setTotalChunks] = useState<number>(0)
+  const [currentChunk, setCurrentChunk] = useState<number>(0)
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false)
+
+
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [voice, setVoice] = useState("af_sky")
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || [])
     setFiles(prev => [...prev, ...selectedFiles])
   }, [])
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     const droppedFiles = Array.from(e.dataTransfer.files)
     setFiles(prev => [...prev, ...droppedFiles])
   }, [])
 
-  const processAndUpload = async () => {
-    if (files.length === 0) return
+  const removeFile = useCallback((index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index))
+  }, [])
 
-    setIsProcessing(true)
+  const processAndUpload = async (): Promise<void> => {
+    if (files.length === 0) return
     try {
+      setIsBusy(true)
+      setStatusMessage("📄 Processing uploaded files...")
       const processed = await processFiles(files)
+
+      // Calculate total images for chunk calculation
+      const totalImages = processed.reduce((sum, f) => sum + f.images.length, 0)
+      const chunks = Math.ceil(totalImages / 6)
+      setTotalChunks(chunks)
+      setCurrentChunk(0)
+
+      setStatusMessage(`🔍 Extracting text from ${totalImages} page${totalImages > 1 ? 's' : ''} (${chunks} chunk${chunks > 1 ? 's' : ''})...`)
       
-      // Send to OCR API
-      setIsLoadingOCR(true)
       const response = await fetch('/api/ocr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -51,15 +67,19 @@ export default function FileUploader() {
       const data = await response.json()
       if (response.ok) {
         setOcrText(data.text)
+        setStatusMessage("✅ OCR complete!")
+        setTimeout(() => setStatusMessage(null), 3000)
       } else {
-        throw new Error(data.message)
+        throw new Error(data.message || 'OCR failed')
       }
-    } catch (error) {
-      console.error('Error processing files:', error)
-      alert('Error processing files. Please try again.')
+    } catch (err) {
+      console.error(err)
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error'
+      setStatusMessage(`❌ Error: ${errorMsg}`)
     } finally {
-      setIsProcessing(false)
-      setIsLoadingOCR(false)
+      setIsBusy(false)
+      setTotalChunks(0)
+      setCurrentChunk(0)
     }
   }
 
@@ -93,26 +113,24 @@ export default function FileUploader() {
     }
   }
 
-  const removeFile = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index))
-  }
-
-  const reset = () => {
+  const reset = (): void => {
     setFiles([])
     setOcrText('')
     setAudioUrl(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
+    setStatusMessage(null)
+    setTotalChunks(0)
+    setCurrentChunk(0)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   return (
-    <div className="space-y-6 bg-black">
-      {/* File Upload Section */}
+    <div className="space-y-6">
+      {/* File Upload Drop Zone */}
       <div
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
-        className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center"
+        className="border-2 border-dashed border-[rgb(var(--border))] rounded-xl p-12 text-center cursor-pointer hover:border-[rgb(var(--primary))] hover:bg-[rgb(var(--accent))] transition-all duration-200"
+        onClick={() => fileInputRef.current?.click()}
       >
         <input
           ref={fileInputRef}
@@ -122,94 +140,141 @@ export default function FileUploader() {
           onChange={handleFileSelect}
           className="hidden"
         />
-        
-        <svg className="w-5 h-5 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-        </svg>
-        
-        <p className="text-lg text-gray-500 mb-2">Drop files here or click to browse</p>
-        <p className="text-sm text-gray-500">Supports PDF and image files</p>
-        
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Select Files
-        </button>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-16 h-16 rounded-full bg-[rgb(var(--primary))] bg-opacity-10 flex items-center justify-center">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-lg font-medium text-[rgb(var(--foreground))]">Drop files here or click to browse</p>
+            <p className="text-sm text-[rgb(var(--muted-foreground))] mt-1">Supports PDF and image files (PNG, JPG, WEBP)</p>
+          </div>
+        </div>
       </div>
+
+      {/* Status Indicator */}
+      {statusMessage && (
+        <div className="bg-[rgb(var(--primary))] bg-opacity-10 border border-[rgb(var(--primary))] text-[rgb(var(--foreground))] px-4 py-3 rounded-lg flex items-center gap-3">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[rgb(var(--primary))]"></div>
+          <span className="flex-1">{statusMessage}</span>
+          {totalChunks > 0 && (
+            <span className="text-sm font-medium">
+              {currentChunk}/{totalChunks} chunks
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Selected Files List */}
       {files.length > 0 && (
-        <div className="bg-black text-white rounded-lg p-4">
-          <h3 className="font-semibold mb-3">Selected Files ({files.length})</h3>
-          <div className="space-y-2">
-            {files.map((file, index) => (
-              <div key={index} className="flex items-center justify-between bg-black p-3 rounded">
-                <div className="flex items-center space-x-3">
-                  <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8l4 4v10a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-lg"> {file.name}</span>
-                  <span className="text-xs text-white">
-                    ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                  </span>
-                </div>
-                <button
-                  onClick={() => removeFile(index)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
-          
-          <div className="mt-4 flex gap-3">
-            <button
-              onClick={processAndUpload}
-              disabled={isProcessing || isLoadingOCR}
-              className="px-6 py-3 mt-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            >
-              {isProcessing ? 'Processing Files...' : isLoadingOCR ? 'Extracting Text...' : 'Extract Text'}
-            </button>
+        <div className="bg-[rgb(var(--card))] border border-[rgb(var(--border))] rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-[rgb(var(--foreground))]">
+              Selected Files ({files.length})
+            </h3>
             <button
               onClick={reset}
-              className="px-6 py-3 mt-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-all"
+              className="text-sm text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--destructive))] transition-colors"
             >
-              Reset
+              Clear all
             </button>
+          </div>
+          <ul className="space-y-2 mb-4 max-h-48 overflow-y-auto scrollbar-thin">
+            {files.map((file, idx) => (
+              <li key={idx} className="flex items-center justify-between p-3 bg-[rgb(var(--secondary))] rounded-lg">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <svg className="w-5 h-5 text-[rgb(var(--primary))] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  <span className="text-sm text-[rgb(var(--foreground))] truncate">{file.name}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-[rgb(var(--muted-foreground))]">
+                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      removeFile(idx)
+                    }}
+                    className="text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--destructive))] transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <button
+            onClick={processAndUpload}
+            disabled={isBusy}
+            className="w-full px-6 py-3 bg-[rgb(var(--primary))] text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium flex items-center justify-center gap-2"
+          >
+            {isBusy ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                Processing...
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Extract Text
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* OCR Result & Audio Generation */}
+      {ocrText && (
+        <div className="space-y-6">
+          <TextEditor text={ocrText} onChange={setOcrText} />
+          
+          <div className="bg-[rgb(var(--card))] border border-[rgb(var(--border))] rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-[rgb(var(--foreground))] mb-4">Convert to Audio</h3>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <select
+                className="px-4 py-3 bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] border border-[rgb(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))] transition-all"
+                value={voice}
+                onChange={(e) => setVoice(e.target.value as VoiceType)}
+                disabled={isBusy}
+              >
+                <option value="af_sky">🎙️ Female Voice (Sky)</option>
+                <option value="am_michael">🎙️ Male Voice (Michael)</option>
+              </select>
+              <button
+                onClick={() => generateAudio(voice)}
+                disabled={isBusy}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium flex items-center justify-center gap-2"
+              >
+                {isBusy ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    </svg>
+                    Generate Audio
+                  </>
+                )}
+              </button>
+            </div>
+            <p className="text-xs text-[rgb(var(--muted-foreground))] mt-3">
+              ⚠️ Note: Audio generation happens on your device using WebAssembly. This may take some time depending on text length.
+            </p>
           </div>
         </div>
       )}
 
-      {/* OCR Text Section */}
-      {ocrText && (
-        <>
-          <TextEditor text={ocrText} onChange={setOcrText} />
-          
-          <div className="flex justify-center gap-4">
-            <select className="text-white bg-blue-600 hover:bg-blue-700 p-3 m-2 rounded-lg" value={voice} onChange={(e) => setVoice(e.target.value)}>
-              <option className="text-white bg-blue-600 hover:bg-blue-700 p-3 m-2 rounded-lg" value="af_sky">Female</option>
-              <option className="text-white bg-blue-600 hover:bg-blue-700 p-3 m-2 rounded-lg" value="am_michael">Male</option>
-            </select>
-            <button
-              onClick={() => generateAudio(voice)}
-              disabled={isGeneratingAudio}
-              className="px-9 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed gap-1"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-              </svg>
-              <span>{isGeneratingAudio ? 'Generating Audio...' : 'Convert to Audio'}
-              </span>
-            </button>
-          </div>
-        </>
-      )}
-
-      {/* Audio Player Section */}
+      {/* Audio Player */}
       {audioUrl && <AudioPlayer audioUrl={audioUrl} />}
     </div>
   )

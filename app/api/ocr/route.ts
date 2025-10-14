@@ -15,6 +15,11 @@ const apiDataSchema = z.object({
   }),
 });
 
+
+if (!process.env.GEMINI_API_KEY) {
+  throw new Error("GEMINI_API_KEY environment variable is not set");
+}
+
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export const POST = async (req: NextRequest) => {
@@ -106,7 +111,7 @@ export const POST = async (req: NextRequest) => {
 
         try {
           const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-lite" ,
+            model: "gemini-2.0-flash-lite" ,
             contents
           })
           results[i] = response.text
