@@ -1,82 +1,119 @@
 // server-side route
 export const runtime = "nodejs";
-
 import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
 import { initWorkerPool, MAX_WORKERS, runTTS } from '../../../workers/workerPool';
+
 const bodySchema = z.object({
   text: z.string(),
   voice: z.enum(["af_sky", "am_michael"]),
 });
 
-initWorkerPool()
+initWorkerPool();
 
 // Concatenate WAV buffers incrementally
 function concatWavs(wavArray: Buffer[]): Buffer {
-  const header = wavArray[0].subarray(0, 44);
-  const dataParts = wavArray.map((b) => b.subarray(44));
-  const totalDataLength = dataParts.reduce((sum, b) => sum + b.length, 0);
+  // Validate input
+  if (!wavArray || wavArray.length === 0) {
+    throw new Error("No WAV buffers to concatenate");
+  }
+  
+  // Filter out any undefined/null buffers and validate they have WAV headers
+  const validBuffers = wavArray.filter(b => b && Buffer.isBuffer(b) && b.length > 44);
+  
+  if (validBuffers.length === 0) {
+    throw new Error("No valid WAV buffers found");
+  }
+  
+  // If only one buffer, return it directly
+  if (validBuffers.length === 1) {
+    return validBuffers[0];
+  }
 
+  const header = validBuffers[0].subarray(0, 44);
+  const dataParts = validBuffers.map((b) => b.subarray(44));
+  const totalDataLength = dataParts.reduce((sum, b) => sum + b.length, 0);
+  
   const output = Buffer.alloc(44 + totalDataLength);
   header.copy(output, 0);
   output.writeUInt32LE(36 + totalDataLength, 4);
   output.writeUInt32LE(totalDataLength, 40);
-
+  
   let offset = 44;
   for (const part of dataParts) {
     part.copy(output, offset);
     offset += part.length;
   }
+  
   return output;
 }
 
-// Split text into ~50 char chunks
+// Split text into ~150 char chunks
 function splitText(text: string): string[] {
   const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
   const chunks: string[] = [];
   let buffer = "";
-
+  
   for (const s of sentences) {
     if ((buffer + s).length > 150) {
-      chunks.push(buffer);
+      if (buffer) chunks.push(buffer.trim());
       buffer = s;
     } else {
       buffer += s;
     }
   }
-  if (buffer) chunks.push(buffer);
+  
+  if (buffer.trim()) chunks.push(buffer.trim());
   return chunks;
 }
-
 
 export const POST = async (req: NextRequest) => {
   try {
     const body = await req.json();
     const parsedBody = bodySchema.safeParse(body);
-    if (!parsedBody.success)
+    
+    if (!parsedBody.success) {
       return NextResponse.json({ message: "Invalid input" }, { status: 411 });
+    }
 
     const { text, voice } = parsedBody.data;
     const textChunks = splitText(text);
 
-    // Process chunks with limited concurrency
-    const results: Buffer[] = [];
-    const promises = textChunks.map((chunk, index) => 
-          runTTS(chunk, voice).then(buffer => ({ index, buffer }))
-        );
-    
-        // Wait for all to complete
-        const unorderedResults = await Promise.all(promises);
-    
-        // Sort by original index to restore order
-        const orderedBuffers = unorderedResults
-          .sort((a, b) => a.index - b.index)
-          .map(r => r.buffer)
-          .filter(Boolean);
+    console.log(`Processing ${textChunks.length} text chunks`);
 
-    
-    // Make sure we have at least one valid buffer
-    if (!orderedBuffers.length) throw new Error("No audio generated");
+    // Create array to hold results in correct order
+    const orderedBuffers: (Buffer | null)[] = new Array(textChunks.length).fill(null);
+
+    // Process with limited concurrency while preserving order
+    for (let i = 0; i < textChunks.length; i += MAX_WORKERS) {
+      const batch = textChunks.slice(i, i + MAX_WORKERS);
+      
+      // Process batch and store results at correct indices
+      await Promise.all(
+        batch.map(async (chunk, batchIndex) => {
+          const actualIndex = i + batchIndex;
+          try {
+            const buffer = await runTTS(chunk, voice);
+            orderedBuffers[actualIndex] = buffer;
+            console.log(`Chunk ${actualIndex} completed (${buffer.length} bytes)`);
+          } catch (error) {
+            console.error(`Failed to process chunk ${actualIndex}:`, error);
+            // Continue processing other chunks even if one fails
+          }
+        })
+      );
+    }
+
+    // Filter out any nulls/undefined and validate buffers
+    const results = orderedBuffers.filter(
+      (b): b is Buffer => b !== null && b !== undefined && Buffer.isBuffer(b) && b.length > 44
+    );
+
+    console.log(`Generated ${results.length} valid buffers out of ${textChunks.length} chunks`);
+
+    if (!results.length) {
+      throw new Error("No audio generated - all chunks failed");
+    }
 
     const finalWav = concatWavs(results);
 
@@ -87,7 +124,10 @@ export const POST = async (req: NextRequest) => {
       },
     });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ message: "Server Error" }, { status: 500 });
+    console.error("TTS route error:", err);
+    return NextResponse.json({ 
+      message: "Server Error", 
+      error: err instanceof Error ? err.message : "Unknown error"
+    }, { status: 500 });
   }
 };
