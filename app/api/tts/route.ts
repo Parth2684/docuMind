@@ -9,8 +9,8 @@ const bodySchema = z.object({
   voice: z.enum(["af_sky", "am_michael"]),
 });
 
-initWorkerPool();
 
+initWorkerPool();
 // Concatenate WAV buffers incrementally
 function concatWavs(wavArray: Buffer[]): Buffer {
   // Validate input
@@ -84,24 +84,18 @@ export const POST = async (req: NextRequest) => {
     // Create array to hold results in correct order
     const orderedBuffers: (Buffer | null)[] = new Array(textChunks.length).fill(null);
 
-    // Process with limited concurrency while preserving order
-    for (let i = 0; i < textChunks.length; i += MAX_WORKERS) {
-      const batch = textChunks.slice(i, i + MAX_WORKERS);
       
-      // Process batch and store results at correct indices
-      await Promise.all(
-        batch.map(async (chunk, batchIndex) => {
-          const actualIndex = i + batchIndex;
-          try {
-            const buffer = await runTTS(chunk, voice);
-            orderedBuffers[actualIndex] = buffer;
-            console.log(`Chunk ${actualIndex} completed (${buffer.length} bytes)`);
-          } catch (error) {
-            console.error(`Failed to process chunk ${actualIndex}:`, error);
-          }
-        })
-      );
-    }
+    await Promise.all(
+      textChunks.map(async (chunk, idx) => {
+        try {
+          const buffer = await runTTS(chunk, voice);
+          orderedBuffers[idx] = buffer;
+          console.log(`Chunk ${idx} done (${buffer.length} bytes)`);
+        } catch (err) {
+          console.error(`Chunk ${idx} failed:`, err);
+        }
+      })
+    );
 
     // Filter out any nulls/undefined and validate buffers
     const results = orderedBuffers.filter(
