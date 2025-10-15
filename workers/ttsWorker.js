@@ -26,7 +26,17 @@ process.on("message", async (msg) => {
     } else {
       process.send({ error: "TTS returned undefined" });
     }
+    safeGarbageCollection();
+    
   } catch (err) {
     process.send({ error: err.message });
   }
 });
+
+function safeGarbageCollection() {
+  try{
+    global.gc?.()
+  }catch(error) {
+    console.error(error)
+  }
+}

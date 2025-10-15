@@ -98,7 +98,6 @@ export const POST = async (req: NextRequest) => {
             console.log(`Chunk ${actualIndex} completed (${buffer.length} bytes)`);
           } catch (error) {
             console.error(`Failed to process chunk ${actualIndex}:`, error);
-            // Continue processing other chunks even if one fails
           }
         })
       );

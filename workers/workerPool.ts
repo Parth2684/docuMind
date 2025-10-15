@@ -14,7 +14,7 @@ export function initWorkerPool() {
   const workerPath = path.resolve(process.cwd(), "workers", "ttsWorker.js");
   
   for (let i = 0; i < MAX_WORKERS; i++) {
-    const child = fork(workerPath, [], { stdio: ["pipe", "pipe", "pipe", "ipc"] });
+    const child = fork(workerPath, [], { stdio: ["pipe", "pipe", "pipe", "ipc"], execArgv: ["--expose-gc"] });
     child.on('error', (err) => {
         console.error(`Worker ${i} error:`, err);
       });
@@ -48,7 +48,6 @@ export async function runTTS(text: string, voice: string): Promise<Buffer> {
       worker.busy = false;
       proc.off("message", onMessage)
     }
-    
     proc.on("message", onMessage);
     proc.send({ chunk: text, voice })
   })
