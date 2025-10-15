@@ -10,22 +10,29 @@ export const MAX_WORKERS = String(process.env.MY_ENV) === "production"
 const workers: { proc: ChildProcess; busy: boolean }[] = [];
 
 export function initWorkerPool() {
-  if (workers.length == os.cpus().length) return;
+  if (workers.length > 0) return;
   const workerPath = path.resolve(process.cwd(), "workers", "ttsWorker.js");
   
   for (let i = 0; i < MAX_WORKERS; i++) {
     const child = fork(workerPath, [], { stdio: ["pipe", "pipe", "pipe", "ipc"] });
+    child.on('error', (err) => {
+        console.error(`Worker ${i} error:`, err);
+      });
+      
+      child.on('exit', (code) => {
+        if (code !== 0) {
+          console.error(`Worker ${i} exited with code ${code}`);
+        }
+      });
     workers.push({proc: child, busy: false})
   }
 }
 
 export async function runTTS(text: string, voice: string): Promise<Buffer> {
   const worker = await waitForFreeWorker()
-  worker.busy = true;
   
   return new Promise ((resolve, reject) => {
     const { proc } = worker;
-    
     const onMessage = (msg: any) => {
       if(msg.error) {
         cleanup();
@@ -51,8 +58,11 @@ function waitForFreeWorker(): Promise<{ proc: ChildProcess;  busy: boolean}> {
   return new Promise((resolve) => {
     const check = () => {
       const free = workers.find((worker) => !worker.busy)
-      if (free) return resolve(free);
-      setTimeout(check, 500)
+      if (free) {
+        free.busy = true
+        return resolve(free)
+      }
+      setTimeout(check, 100)
     }
     check()
   })

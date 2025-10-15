@@ -19,7 +19,7 @@ process.on("message", async (msg) => {
     const ttsEngine = await initTTS();
     
     const audio = await ttsEngine.generate(chunk, { voice });
-    const wav = audio?.toWav();
+    const wav = audio.toWav();
     
     if (wav) {
       process.send({ result: Buffer.from(wav) });

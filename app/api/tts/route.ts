@@ -3,9 +3,6 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
-// import { fork, ChildProcess } from "child_process";
-// import os from "os";
-// import path from "path";
 import { initWorkerPool, MAX_WORKERS, runTTS } from '../../../workers/workerPool';
 const bodySchema = z.object({
   text: z.string(),
@@ -51,53 +48,6 @@ function splitText(text: string): string[] {
   return chunks;
 }
 
-// Process a chunk in a child process
-// function processChunk(chunk: string, voice: string): Promise<Buffer> {
-//   return new Promise((resolve, reject) => {
-//     const workerPath = path.resolve(process.cwd(), "workers/ttsWorker.js");
-//     const child: ChildProcess = fork(workerPath, [], {
-//       stdio: ["pipe", "pipe", "pipe", "ipc"],
-//     });
-
-//     let resolved = false;
-
-//     child.on("message", (msg: any) => {
-//       if (resolved) return;
-
-//       if (msg.error) {
-//         resolved = true;
-//         child.kill();
-//         return reject(new Error(msg.error));
-//       }
-//       if (msg.result) {
-//         resolved = true;
-//         child.kill();
-//         resolve(Buffer.from(msg.result));
-//       }
-//     });
-
-//     child.on("exit", (code) => {
-//       if (!resolved && code !== 0) {
-//         resolved = true;
-//         reject(new Error(`Child process exited with code ${code}`));
-//       }
-//     });
-
-//     child.on("error", (err) => {
-//       if (!resolved) {
-//         resolved = true;
-//         child.kill();
-//         reject(err);
-//       }
-//     });
-
-//     // Send the task to child process
-//     child.send({ chunk, voice });
-//   });
-// }
-
-// // Max workers = CPU cores or 8
-// const MAX_WORKERS = Math.max(2, Math.min(8, os.cpus().length));
 
 export const POST = async (req: NextRequest) => {
   try {
@@ -111,23 +61,22 @@ export const POST = async (req: NextRequest) => {
 
     // Process chunks with limited concurrency
     const results: Buffer[] = [];
-    for (let i = 0; i < textChunks.length; i += MAX_WORKERS) {
-      const batch = textChunks.slice(i, i + MAX_WORKERS);
-      const batchResults = await Promise.all(
-        batch.map((chunk) => runTTS(chunk, voice)),
-      );
-      results.push(...batchResults.filter(Boolean));
-    }
+    const promises = textChunks.map((chunk, index) => 
+          runTTS(chunk, voice).then(buffer => ({ index, buffer }))
+        );
     
-    // for (const chunk of textChunks) {
-    //   const result = await runTTS(chunk, voice)
-    //   results.push(result)
-    // }
+        // Wait for all to complete
+        const unorderedResults = await Promise.all(promises);
     
+        // Sort by original index to restore order
+        const orderedBuffers = unorderedResults
+          .sort((a, b) => a.index - b.index)
+          .map(r => r.buffer)
+          .filter(Boolean);
 
     
     // Make sure we have at least one valid buffer
-    if (!results.length) throw new Error("No audio generated");
+    if (!orderedBuffers.length) throw new Error("No audio generated");
 
     const finalWav = concatWavs(results);
 
