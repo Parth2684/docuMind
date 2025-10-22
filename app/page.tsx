@@ -1,4 +1,4 @@
-"use client"
+
 
 import FileUploader from '@/components/FileUploader'
 import ThemeToggle from '@/components/ThemeToggle'
