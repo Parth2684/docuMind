@@ -13,7 +13,7 @@
     "@google/genai": "^1.15.0",
     "axios": "^1.11.0",
     "kokoro-js": "^1.2.1",
-    "next": "15.4.6",
+    "next": "15.4.10",
     "pdfjs-dist": "^5.4.54",
     "react": "19.1.0",
     "react-dom": "19.1.0",
