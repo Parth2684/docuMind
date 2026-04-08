@@ -93,7 +93,7 @@ export const POST = async (req: NextRequest) => {
 
         try {
           const response = await ai.models.generateContent({
-            model: "gemini-3-flash" ,
+            model: "gemini-3.1-flash-lite-preview" ,
             contents
           })
           results[i] = response.text
